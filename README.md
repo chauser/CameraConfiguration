@@ -1,7 +1,5 @@
 # Selecting and Configuring Cameras for Driver Dashboards
 
-  
-
 ## Overview
 
 For many years our team has spent a more-than-reasonable amount of time each year trying to configure our cameras to work well on our dashboard displays. This fall I decided to look into the situation. I found a bunch of useful information that is not easily discovered. 
@@ -18,9 +16,9 @@ This article aims to fill some of that gap and tries to give a solid foundation 
 
 The uses for a driver dashboard camera vary from game to game but there are a number of common characteristics. From the perspective of the drive team, the most important are likely: camera field of view, image clarity, and image delay -- how long does it take for something that is seen by the camera to show up on the dashboard? 
 
-The field of view is governed by the camera, its lens, and the aspect  ratios that it supports, typically 4:3, 16:9, or 16:10. The latency is affected by the camera itself, the frame rate, and the time to do any processing such as resolution scaling and compression -- typically performed by the RoboRIO or a coprocessor as well as the time to transmit the image over the network to the dashboard computer.
+The field of view is governed by the camera, its lens, and the aspect  ratios that it supports, typically 4:3, 16:9, or 16:10. The latency is affected by the camera itself, the frame rate, and the time to do any processing such as resolution scaling and compression -- typically performed by the roboRIO or a coprocessor as well as the time to transmit the image over the network to the dashboard computer.
 
-Apart from how the display looks, the camera's configuration also affects how much network bandwidth is required between the robot and the driver station computer, and how much cpu load is placed on the RoboRIO and/or coprocessor. Both of these can affect the controllability of the robot so care must be taken to make good choices.
+Apart from how the display looks, the camera's configuration also affects how much network bandwidth is required between the robot and the driver station computer, and how much cpu load is placed on the roboRIO and/or coprocessor. Both of these can affect the controllability of the robot so care must be taken to make good choices.
 
 Also, sometimes the same camera will be used for vision tasks and for the dashboard camera. This will lead to more tradeoffs as you balance the competing needs of the two uses.
 
@@ -35,30 +33,40 @@ The next two sections cover how to set the camera-native and stream configuratio
 ## Configuring camera-native parameters -- VideoMode
 
 **Note about host addresses in URLS**
-In the URLs below I write `<host>` to identify the network host where the camera server is running. `<host>` has to be replaced by the network address or name of the computer, typically an on-robot RoboRIO or a Raspberry Pi (or similar) coprocessor. An example network address is `10.TE.AM.2` for the robot RoboRIO (Replace `TE.AM` with your team's team number spread over 4 digits -- e.g. `40.61`. The RoboRio will have the name `RoboRIO-TEAM-frc.local.` A Raspberry Pi running WPILibPi will have the name `wpilibpi.local`. How to find the network address of particular computer is beyond the scope of this article, but the `nmap` tool is often helpful.
+In the URLs below I write `<host>` to identify the network host where the camera server is running. `<host>` has to be replaced by the network address or name of the computer, typically an on-robot roboRIO or a Raspberry Pi (or similar) coprocessor. An example network address is `10.TE.AM.2` for the robot roboRIO (Replace `TE.AM` with your team's team number spread over 4 digits -- e.g. `40.61`. The roboRIO will have the name `roboRIO-TEAM-frc.local.` A Raspberry Pi running WPILibPi will have the name `wpilibpi.local`. How to find the network address of particular computer is beyond the scope of this article, but the `nmap` tool is often helpful.
 
-From the above, we know that each camera supports a specific set of possible `VideoMode`s (pixel format, resolution and frame rate). If a USB camera is plugged into the RoboRIO or Raspberry Pi running the WPILib camera server, you can use a web browser to visit `http://<host>:1181/` and see a list of supported `VideoMode`s as well as view the camera stream at the current settings. (Additional cameras on the same host can be seen by visiting `http://<host>:1182`, `http:<host>:1183`, etc.) You _cannot_, change the `VideoMode` from this page.
+From the above, we know that each camera supports a specific set of possible `VideoMode`s (pixel format, resolution and frame rate). If a USB camera is plugged into the roboRIO or Raspberry Pi running the WPILib camera server, you can use a web browser to visit `http://<host>:1181/` and see a list of supported `VideoMode`s as well as view the camera stream at the current settings. (Additional cameras on the same host can be seen by visiting `http://<host>:1182`, `http:<host>:1183`, etc.) You _cannot_, change the `VideoMode` from this page.
 
-On the RPi you change the `VideoMode` using the `VideoSettings` tab on the WPILibPi web interface. [Picture showing where]
+On the RPi you change the `VideoMode` using the `Vision Settings` tab on the WPILibPi web interface.  ![RPi-mainpage](https://github.com/chauser/CameraConfiguration/assets/834131/38d0e491-2905-4c5d-8465-56ae5edb9afc) ![RPi-camerasettings-select-camera](https://github.com/chauser/CameraConfiguration/assets/834131/c5f17893-fd32-4424-a7e8-67ee5c1e7d26)
+![RPi-camerasettings-videomode](https://github.com/chauser/CameraConfiguration/assets/834131/eb79f73b-4d50-4381-91c6-5342cfeee5e5)
 
-On the RoboRIO you control the camera-native settings in your robot code.  Basic code for this in Java is:
+
+
+On the roboRIO you control the camera-native settings in your robot code.  Basic code for this in Java is:
 ```
-[Camera-mode setting code here]
+[Video-mode setting code here]
 ```
- C++ code is similar (see the WPILib documentation [here](wpilibdoc).
+ C++ code is similar (see the WPILib documentation Vision documentation [here](wpilibdoc).
   
+### Other camera settings
 Cameras typically have additional settings beyond the VideoMode including things like exposure, brightness, hue, backlight compensation powerline frequency, etc. The ones that are applicable for an attached camera can be seen _and controlled_ on the `http://<host>:118x/` page. They can also be controlled through robot code, by loading camera configuration `.json` files on the Raspberry Pi camera configuration page, by changing values in the NetworkTables (look under the key `/CameraServer/cameraname/`) or by sending `http` requests -- se the next section.
 
 **Important:** Changes to these values, regardless of how made, affect _all_ users of the camera -- i.e. they are specific to the camera and not to the stream. 
 
+### Configuring other camera settings on the roboRIO with code 
+
 ### Configuring other camera settings on WPILibPi
 
-On wpilibpi these settings can be controlled by `.json` files that can be generated, edited, and loaded through the web interface. [Pictures]
- ### Configuring other camera settings on the RoboRIO with code 
+On wpilibpi these settings can be controlled by `.json` files that can be generated, edited, and loaded through the web interface. Use the `Copy Source Config From Camera` button 
+to populate the `Custom Properties JSON` box with the current configuration. ![copy-source-config-highlighted](https://github.com/chauser/CameraConfiguration/assets/834131/c0e37dba-931e-4815-b830-ad232c0192b4)
+
+
+Copy that text into a `.json` file and save it on the Pi. Then use the Browse button to find that file to 
+populate the `Load Source Config From JSON` box with the file name. Finally, click the `Save` button at the bottom the of page. The camera settings, apart from the VideoMode will now be loaded from the file each time the system starts up.
 
 ## Stream requests, configuring per-stream parameters, and stream defaults
 
-The wpilib camera server has the ability to deliver streams at resolutions and frame rates different from the native camera settings. This approach, however, requires the RoboRIO or Raspberry Pi to convert the resolution, which is a potentially expensive operation in terms of CPU percentage continuously required for the conversion. The camera server can also compress the images making up the stream which is controlled by the `compression` parameter in a stream request or the camera server's default compression setting (More about camera server defaults in a moment.). The value of the parameter ranges from -1 to 100 with -1 meaning "use the camera server's default compression', 0 meaning, somewhat counterintuitively, "maximum compression" which yields unusable image quality, and 100 meaning "full quality without compression at all".
+The wpilib camera server has the ability to deliver streams at resolutions and frame rates different from the native camera settings. This approach, however, requires the roboRIO or Raspberry Pi to convert the resolution, which is a potentially expensive operation in terms of CPU percentage continuously required for the conversion. The camera server can also compress the images making up the stream which is controlled by the `compression` parameter in a stream request or the camera server's default compression setting (More about camera server defaults in a moment.). The value of the parameter ranges from -1 to 100 with -1 meaning "use the camera server's default compression', 0 meaning, somewhat counterintuitively, "maximum compression" which yields unusable image quality, and 100 meaning "full quality without compression at all".
 
 ### Requesting a stream and controlling stream configuration parameters in http requests
 The basic way to start streaming is with the request
@@ -77,7 +85,7 @@ http://host:1181/?action=stream&brightness=50
 but remember that changing these other parameters affect _all_ users of the camera.
 
 ### Setting stream defaults
-Remember that the stream default settings are the frame rate and mode from the camera's VideoMode and no compression. The defaults for a particular stream can be set either in robot code for the RoboRIO and on the Video Settings web page of the Raspberry Pi.
+Remember that the stream default settings are the frame rate and mode from the camera's VideoMode and no compression. The defaults for a particular stream can be set either in robot code for the roboRIO and on the Video Settings web page of the Raspberry Pi.
 Here's how to do it in code (there's no explicit WPILib documentation for this technique). 
 ```
 Camera cam = new Camera(0);
@@ -98,10 +106,9 @@ server.setDefaultResolution(...);
 
 Here's what it looks like on the Raspberry Pi
 
-How to set from Raspberry Pi web interface
+![RPi-camerasettings-streamdefaults](https://github.com/chauser/CameraConfiguration/assets/834131/be193a1e-8812-4ea8-80a1-73df14e7fc69)
 
-How to set in the request URL
-
+What's the difference between `Compression` and `Default Compression`? `Compression` is for sources using MPEG format. `Default Compression` is for sources using other formats such as YUYV. Normally you should try to use an MPEG source
   
 
 ## Cameras
@@ -116,7 +123,7 @@ Latency: the best latency I've been able to achieve with USB cameras on a Robo R
 
 Pixel format: the available dashboard viewers support only the MPEG pixel format. Some USB cameras do not support MPEG format. For example, I have one that only supports the YUYV format. The good news is that the wpilib camera server can convert other formats to MPEG. The bad news is that this is a cpu-intensive operation that grows as the product of the stream resolution's width and height.
 
-What about IP cameras? IP cameras plug directly into a network switch on the robot and operate independently of the robot code. For several years our favorite camera was the Axis M-1065L, a sophisticated security system camera with many possible configurations. These cameras can be completely independent of the robot code, having no effect on RoboRIO or Pi performance since those cpus never see the data from the camera. Bandwidth, resolution, frame rate and compression for an IP camera are controlled using on-camera mechanisms that depend on the specific camera. Consult the camera documentation.
+What about IP cameras? IP cameras plug directly into a network switch on the robot and operate independently of the robot code. For several years our favorite camera was the Axis M-1065L, a sophisticated security system camera with many possible configurations. These cameras can be completely independent of the robot code, having no effect on roboRIO or Pi performance since those cpus never see the data from the camera. Bandwidth, resolution, frame rate and compression for an IP camera are controlled using on-camera mechanisms that depend on the specific camera. Consult the camera documentation.
 
 Some IP cameras these days do not support mjpeg streaming format and instead use rtsp (Real-time Streaming Protocol). None of the FRC standard dashboards support this protocol. To use these you'll need to use a different program on the driverstation computer -- VLC works (but imposes very high latency). Other people talk about using ffmpeg, and various security camera systems and tools to view video from rtsp-only cameras.
 
@@ -167,7 +174,7 @@ Avoid RTSP-only IP cameras. Although you can probably make them work it seems li
     
  -   the **Logitech C260** camera (obsolete; the C270 model is available at about the same price as the HD-3000; of course, differences in capabilities and performance are unknowable without having one in hand) has very limited choices for VideoMode near the sweet spot. It also has a somewhat narrower field of view than the HD-3000 and exhibits color/exposure anomalies sometimes, especially when using wpilibpi.
     
- - **The Raspberry Pi Camera Module** (experience with V2): this has a large sensor, good field of view and pretty much arbitrary choice of resolution and frame rate. The main disadvantages are: it doesn't work on the RoboRIO, only a Pi or Pi clone; each Raspberry Pi can only support one camera module; and the camera must be located within a few inches of the Raspberry Pi.
+ - **The Raspberry Pi Camera Module** (experience with V2): this has a large sensor, good field of view and pretty much arbitrary choice of resolution and frame rate. The main disadvantages are: it doesn't work on the roboRIO, only a Pi or Pi clone; each Raspberry Pi can only support one camera module; and the camera must be located within a few inches of the Raspberry Pi.
 
 ### Latency and latency experiments
 
