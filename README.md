@@ -101,7 +101,7 @@ server.setResolution(320, 240);
 ```
 
 **Important note:** In the code above it is essential that the call to `CameraServer.addServer` precede the `new UsbCamera` operation. 
-This is due to a CameraServer/cscore initialization order constraint (see wpilib issues 5055 and 6130)**
+This is due to a CameraServer/cscore initialization order constraint (see wpilib issues 5055 and 6130).
 For the same reason, the simpler and more obvious **code below does not currently work**.
 
 ```
