@@ -35,7 +35,7 @@ The next two sections cover how to set the camera-native and stream configuratio
 **Note about host addresses in URLS**
 In the URLs below I write `<host>` to identify the network host where the camera server is running. `<host>` has to be replaced by the network address or name of the computer, typically an on-robot roboRIO or a Raspberry Pi (or similar) coprocessor. An example network address is `10.TE.AM.2` for the robot roboRIO (Replace `TE.AM` with your team's team number spread over 4 digits -- e.g. `40.61`. The roboRIO will have the name `roboRIO-TEAM-frc.local.` A Raspberry Pi running WPILibPi will have the name `wpilibpi.local`. How to find the network address of particular computer is beyond the scope of this article, but the `nmap` tool is often helpful.
 
-From the above, we know that each camera supports a specific set of possible `VideoMode`s (pixel format, resolution and frame rate). If a USB camera is plugged into the roboRIO or Raspberry Pi running the WPILib camera server, you can use a web browser to visit `http://<host>:1181/` and see a list of supported `VideoMode`s as well as view the camera stream at the current settings. (Additional cameras on the same host can be seen by visiting `http://<host>:1182`, `http:<host>:1183`, etc.) You _cannot_, change the `VideoMode` from this page.
+From the above, we know that each camera supports a specific set of possible `VideoMode`s (pixel format, resolution and frame rate). If a USB camera is plugged into the roboRIO or Raspberry Pi running the WPILib camera server, you can use a web browser to visit `http://<host>:1181/` and see a list of supported `VideoMode`s as well as view the camera stream at the current settings. (Additional cameras on the same host can be seen by visiting `http://<host>:1182`, `http:<host>:1183`, etc.) You _cannot_ change the `VideoMode` from this page.
 
 On the RPi you change the `VideoMode` using the `Vision Settings` tab on the WPILibPi web interface.  ![RPi-mainpage](https://github.com/chauser/CameraConfiguration/assets/834131/38d0e491-2905-4c5d-8465-56ae5edb9afc) ![RPi-camerasettings-select-camera](https://github.com/chauser/CameraConfiguration/assets/834131/c5f17893-fd32-4424-a7e8-67ee5c1e7d26)
 ![RPi-camerasettings-videomode](https://github.com/chauser/CameraConfiguration/assets/834131/eb79f73b-4d50-4381-91c6-5342cfeee5e5)
@@ -44,7 +44,8 @@ On the RPi you change the `VideoMode` using the `Vision Settings` tab on the WPI
 
 On the roboRIO you control the camera-native settings in your robot code.  Basic code for this in Java is:
 ```
-[Video-mode setting code here]
+UsbCamera cam = CameraServer.startAutomaticCapture();
+cam.setVideoMode(VideoMode.PixelFormat.MJPEG, 360, 240, 15); // configure camera for MJPEG at 360x240 resolution and 15fps.
 ```
  C++ code is similar (see the WPILib documentation Vision documentation [here](wpilibdoc).
   
@@ -191,4 +192,7 @@ The _point-the-camera at the screen_ technique can be further refined to get act
 -   Load the video into the viewing program and step through video looking for places where the blinker changes state. The number of frames between that point and when the camera image shows the changed state, multiplied by 1/recordingframerate, is the latency. Average over a few state changes and you'll have measured the average latency for that configuration. It takes much longer to describe than it does to do once the programs are set up. 
     
 -   For 30fps recording, 4-6 keypresses cover the range of 130ms-200ms. For 60fps, 8-12 keypresses cover that same range.
+
+## Sources
+Information for this article was gleaned from the [WPILib vision documentation](https://docs.wpilib.org/en/stable/docs/software/vision-processing/index.html), the `cscore` source code within WPILib, and quite a few different threads on [ChiefDelphi](https://www.chiefdelphi.com/). A good search term there is "camera". Also quite a lot of experimentation was done to figure out the way various settings interact. I would happy to receive suggestions for improvement, especially corrections for any mistakes but more generally improvements to make the document more useful. Please submit as pull requests.
 
