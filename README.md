@@ -86,29 +86,22 @@ but remember that changing these other parameters affect _all_ users of the came
 
 ### Setting stream defaults
 Remember that the stream default settings are the frame rate and mode from the camera's VideoMode and no compression. The defaults for a particular stream can be set either in robot code for the roboRIO and on the Video Settings web page of the Raspberry Pi.
-Here's how to do it in code (there's no explicit WPILib documentation for this technique). 
+Here's how to do it in code for the first camera. (There's no explicit WPILib documentation for this technique which takes advantage of starting the server based on an already-created Camera object. This is the only way I could figure out that gave access to both the Camera object and MjpegServer object -- and you need to have both in order to fully configure the system.) 
 ```
-Camera cam = new Camera(0);
-Mjpegserver server = CameraServer.startAutomaticCapture(cam);
-server.setCompression(...)
-server.setFrameRate(...)
-server.setResolution(...)
+UsbCamera cam = new UsbCamera("First Camera", 0); // the string is an arbitary name, 0 is the device number
+cam.setVideoMode(VideoMode.PixelFormat.MJPEG, 640, 480, 30); // camera is 640x480 at 30fps
+MjpegServer server = CameraServer.startAutomaticCapture(cam);
+// now set the defaults for streams to 320x240 at 15fps and level 20 compression
+server.setCompression(20);
+server.setFPS(15);
+server.setResolution(320, 240);
 ```
-  
-
-cam.setResolution(...)
-
-cam.setFps(15);
-
-server.setCompression(50);
-
-server.setDefaultResolution(...);
 
 Here's what it looks like on the Raspberry Pi
 
 ![RPi-camerasettings-streamdefaults](https://github.com/chauser/CameraConfiguration/assets/834131/be193a1e-8812-4ea8-80a1-73df14e7fc69)
 
-What's the difference between `Compression` and `Default Compression`? `Compression` is for sources using MPEG format. `Default Compression` is for sources using other formats such as YUYV. Normally you should try to use an MPEG source
+What's the difference between `Compression` and `Default Compression`? `Compression` is for sources using MJPEG format. `Default Compression` is for sources using other formats such as YUYV. Normally you should try to use an MJPEG source
   
 
 ## Cameras
@@ -121,11 +114,11 @@ Also relevant is the cord length of the camera -- for USB cameras probably not a
 
 Latency: the best latency I've been able to achieve with USB cameras on a Robo Rios and Raspberry Pis 130-200ms. I suspect this is about the lowest can be achieved--the latency of the built-in camera on the dashboard laptop is about the same. Of course, lower is better, but 200ms is likely adequate, depending on the driving task involved.
 
-Pixel format: the available dashboard viewers support only the MPEG pixel format. Some USB cameras do not support MPEG format. For example, I have one that only supports the YUYV format. The good news is that the wpilib camera server can convert other formats to MPEG. The bad news is that this is a cpu-intensive operation that grows as the product of the stream resolution's width and height.
+Pixel format: the available dashboard viewers support only the MJPEG pixel format. Some USB cameras do not support MJPEG format. For example, I have one that only supports the YUYV format. The good news is that the wpilib camera server can convert other formats to MJPEG. The bad news is that this is a cpu-intensive operation that grows as the product of the stream resolution's width and height.
 
 What about IP cameras? IP cameras plug directly into a network switch on the robot and operate independently of the robot code. For several years our favorite camera was the Axis M-1065L, a sophisticated security system camera with many possible configurations. These cameras can be completely independent of the robot code, having no effect on roboRIO or Pi performance since those cpus never see the data from the camera. Bandwidth, resolution, frame rate and compression for an IP camera are controlled using on-camera mechanisms that depend on the specific camera. Consult the camera documentation.
 
-Some IP cameras these days do not support mjpeg streaming format and instead use rtsp (Real-time Streaming Protocol). None of the FRC standard dashboards support this protocol. To use these you'll need to use a different program on the driverstation computer -- VLC works (but imposes very high latency). Other people talk about using ffmpeg, and various security camera systems and tools to view video from rtsp-only cameras.
+Some IP cameras these days do not support mjpeg streaming format and instead use rtsp (Real-time Streaming Protocol). None of the FRC standard dashboards support this protocol. To use these you'll need to use a different program on the driverstation computer -- VLC works (but imposes very high latency). Other people talk about using ffMJPEG, and various security camera systems and tools to view video from rtsp-only cameras.
 
 ## Dashboard-specific information 
 
@@ -145,7 +138,7 @@ To use an mjpeg IP camera (one not connected to the wpilib cameraserver) you can
 
 ### Default Dashboard (provided by the NI Game Tools package)
 
-Like Shuffleboard, this dashboard has only one camera widget that can only connected to camera streams listed by the wpilib camera server in NetworkTables. The widget offers a limited set of resolutions (all 4:3) and fps choices, although compression can be set to any value from 0 to 100. Does this accept default resolution from the server in any configuration?
+Like Shuffleboard, this dashboard has only one camera widget that can only connected to camera streams listed by the wpilib camera server in NetworkTables. The widget offers a limited set of resolutions (all 4:3) and fps choices, although compression can be set to any value from 0 to 100. I do not know if there are any settings that you can make on the dashboard to use the stream defaults from the server.
 
 ## Switched cameras
 In some situations you will find a need for two cameras and the ability to select which one is displayed on the dashboard. For example, if the robot has to be driven with precision both forward and back. Displaying both cameras at once may require more bandwidth than available. The WpiLib camera server supports attaching two (or more) cameras to the server and creating a third, virtual, switched camera whose display of one or the other is controlled by a NetworkTable entry. 
@@ -158,43 +151,44 @@ The opinions here are based on one team's experience which covers only limited u
 
 Our experience is that limiting the camera bandwidth to the dashboard to 1-1.5 Mbps is desirable/necessary to avoid interfering with the driverstation's control role. Be aware that on-field bandwidth is limited to a maximum of 4Mbps. In some venues, wifi interference has caused lower limits to be imposed.
 
-Getting under 1Mbps typically requires a resolution sent to the dashboard of about 320x240 (4:3) or 384x240 (~16:10), a frame rate of 15fps, and a compression setting of 15-50. Recommendation: for a camera used only as a driving camera, set the video mode to whatever the camera has that is close to 320x240 or 384x240, fps to 15. In the camera server defaults set the compression to something in the range 15 to 50 but do not set the resolution or frame rate -- thereby accepting what the camera is doing natively and so minimizing the cpu load.
+Getting under 1Mbps typically requires a resolution sent to the dashboard of about 320x240 (4:3) or 384x240 (~16:10), a frame rate of 15fps, and a compression setting of 15-50. Recommendation: for a camera used only as a driving camera, set the video mode to whatever the camera has that is close to 320x240 or 384x240, fps to 15. Set the camera server stream default for compression to something in the range 15 to 50 but do not set the resolution or frame rate -- thereby accepting what the camera is doing natively and thereby minimizing the cpu load.
 
-If you want to use a camera both as a driving camera and a vision camera, you'll probably need the native resolution to be higher -- at least 640x480, perhaps much higher. It will require significant cpu resources to sufficiently compress and rescale the video to achieve the desired bandwidth target. This is probably a really bad idea on a robo rio 1, not a great idea on a robo rio 2, and would probably be fine with a raspberry pi (or the like) as your vision processor.
+If you want to use a camera both as a driving camera and a vision camera, you'll probably need the native resolution to be higher -- at least 640x480, perhaps much higher. It will require significant cpu resources to sufficiently compress and rescale the video to achieve the desired bandwidth target. This is probably a really bad idea on a roboRIO 1, not a great idea on a roboRIO 2, and would probably be fine with a raspberry pi (or the like) as your vision processor.
 
 Avoid RTSP-only IP cameras. Although you can probably make them work it seems like a waste of time given that adequate USB cameras are available and relatively easy to use.
 
 ### Camera idiosyncracies:
 
- -   choose a camera that supports MPEG pixel modes; others require work from the cpu that is avoided by MPEG modes. All the cameras discussed below support MPEG modes.
+ -   choose a camera that supports MJPEG pixel modes; others require work from the cpu that is avoided by MJPEG modes. All the cameras discussed below support MJPEG modes.
     
- -   the **Microsoft Lifecam HD-3000** (currently $25 at Amazon) has a few video modes in close to what is recommended above. It also has a fairly wide field of view. For configured video modes above 15fps, regardless of resolution, it may only achieve 15fps (or even 8 fps) depending on the scene complexity and exposure settings
+ -   the **Microsoft Lifecam HD-3000** (currently $25 at Amazon) has a few video modes close to what is recommended above. It also has a fairly wide field of view. For configured video modes above 15fps, regardless of resolution, it may only achieve 15fps (or even 10 fps) depending on the scene complexity and exposure settings
     
- -   [this ELP camera](https://www.amazon.com/gp/product/B071D3S43S/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&th=1)  has an ultra-wide-angle lens and a few video modes near the sweet spot. Video modes with frame rates above 15 may be curtailed by scene complexity and exposure settings. Also, weirdly, this camera seems to only do higher frame rates if the 60Hz flicker frequency is selected -- not that it has much effect on image quality.
+ -   [this ELP camera](https://www.amazon.com/gp/product/B071D3S43S/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&th=1)  has an ultra-wide-angle lens and a few video modes near the sweet spot. Video modes with frame rates above 15 may be curtailed by scene complexity and exposure settings. Also, weirdly, this camera seems to only do higher frame rates if the 60Hz power_line_frequency is selected -- though this setting seems to have little or no effect on image quality.
     
  -   the **Logitech C260** camera (obsolete; the C270 model is available at about the same price as the HD-3000; of course, differences in capabilities and performance are unknowable without having one in hand) has very limited choices for VideoMode near the sweet spot. It also has a somewhat narrower field of view than the HD-3000 and exhibits color/exposure anomalies sometimes, especially when using wpilibpi.
     
- - **The Raspberry Pi Camera Module** (experience with V2): this has a large sensor, good field of view and pretty much arbitrary choice of resolution and frame rate. The main disadvantages are: it doesn't work on the roboRIO, only a Pi or Pi clone; each Raspberry Pi can only support one camera module; and the camera must be located within a few inches of the Raspberry Pi.
+ - **The Raspberry Pi Camera Module** (experience with V2): this has a large sensor, good field of view and pretty much arbitrary choice of resolution and frame rate. The main disadvantages are: it doesn't work on the roboRIO, only on a Pi or Pi clone; each Raspberry Pi can only support one camera module; and the camera must be located within a few inches of the Raspberry Pi.
 
 ### Latency and latency experiments
 
 Our experience is that latency (time from when the camera sees a change to when the change is displayed on the dashboard) in the neighborhood of 150ms is good enough, 100ms is outstanding but hard to achieve, and anything over 200ms is approaching annoying and results in reduction of usefulness of the driver camera.
 
-I suggest experimenting with camera and stream settings until you achieve a 15fps frame rate with acceptable bandwidth and image quality. Just by moving in front of the camera while watching the video you'll get a sense of how much the latency affects your perception of what's happening.
+I suggest experimenting with camera and stream settings until you achieve a 15fps frame rate with acceptable bandwidth and image quality. Just by moving in front of the camera while watching the video you'll get a sense of how much the latency affects your perception of what's happening. A better sense of the latency can be achieved by pointing the camera at the same screen where the video is displayed and doing something in another window. 
 
-Good engineering practice suggests a need for something a bit more rigorous. Here is a technique we've used to get a rough measurement of latency. Istrongly suggest doing these experiments initially with a wired connection (either ethernet or USB) to the robot or coprocessor. WiFi variability just adds confusion. Of course, after figuring out satisfactory settings, test it on WiFi and make it work.
+The _point-the-camera at the screen_ technique can be further refined to get actual measurements of latency. I strongly suggest doing these experiments initially with a wired connection (either ethernet or USB) to the robot or coprocessor. WiFi variability just adds confusion. Of course, after figuring out satisfactory settings, test it on WiFi, preferably with the robot radio.
 
--   Create a program that causes an area about 1cm x 1cm on the driverstation screen to blink at 1 to 2 Hz rate -- it can be a boolean widget in Shuffleboard or SmartDashboard driven by a robot program running on a real robot or in simulation, a separate program running on the laptop computer, maybe a video of something blinking that you play on the computer. There's nothing critical about this -- it doesn't have to be strictly periodic, the rate isn't critical, etc. It's just important that it be easy to visually distinguish the two states.
+-   Create a program that causes an area at least 1cm x 1cm on the driverstation screen to blink at 1 to 2 Hz rate -- it can be: a boolean widget on a dashboard driven by a robot program running on a real robot or in simulation; a separate program running on the computer; a video of something blinking that you play on the computer, etc. There's nothing critical about this -- it doesn't have to be strictly periodic, the rate isn't critical, etc. It's just important that it be easy to visually distinguish the two states.
     
--   Install Open Broadcast Studio and kdenlive.
-    
+-   Install a program that let's you record the screen of your computer. I used Open Broadcast Studio (OBS). 
+-       
 -   Run OBS and configure a video source that captures the screen; a 60Hz frame capture rate is good.
     
 -   Hook up and configure the camera and stream viewer you want to test. Arrange the windows so the camera stream display is close to the blinking area of the screen. This is really easy if both are displayed on the same dashboard but even if using a separate blinking program it's not hard.
     
--   In OBS start recording. Point the camera at the screen so it picks up both the blinking and the camera viewer's display. Record for 5-10 blinks. Stop the recording and save the file.
+-   In OBS start recording. Point the camera at the screen so it picks up both the blinking and the camera viewer's display. Record for 5-10 blinks. Stop the recording and save the recorded video file (OBS does this automatically when you stop the recording).
     
--   Run kdenlive and load the recording as a snippet. Drag the recording to the project time line. Position the cursor at the beginning of the recording. While holding down the shift key use the right arrow key to move forward through the recording. Each time the blinker changes state, start counting the number of keypresses until the state change is visible in the camera view. The number of keypresses multiplied by 1/recordingframerate is the latency. Average over a few state changes and you'll have measured the average latency for that configuration. It takes much longer to describe than it does to do once the programs are set up. [This needs pictures.]
+-   Install a viewing program that let's you look at video frame by frame. I used `kdenlive`. This doesn't have to be on the same computer.
+-   Load the video into the viewing program and step through video looking for places where the blinker changes state. The number of frames between that point and when the camera image shows the changed state, multiplied by 1/recordingframerate, is the latency. Average over a few state changes and you'll have measured the average latency for that configuration. It takes much longer to describe than it does to do once the programs are set up. 
     
 -   For 30fps recording, 4-6 keypresses cover the range of 130ms-200ms. For 60fps, 8-12 keypresses cover that same range.
 
