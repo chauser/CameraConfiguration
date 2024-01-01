@@ -88,7 +88,22 @@ but remember that changing these other parameters affect _all_ users of the came
 ### Setting stream defaults
 Remember that the stream default settings are the frame rate and mode from the camera's VideoMode and no compression. The defaults for a particular stream can be set either in robot code for the roboRIO and on the Video Settings web page of the Raspberry Pi.
 Here's how to do it in code for the first camera. (There's no explicit WPILib documentation for this technique which takes advantage of starting the server based on an already-created Camera object. This is the only way I could figure out that gave access to both the Camera object and MjpegServer object -- and you need to have both in order to fully configure the system.) 
-**The code below currently does not work -- the camera doesn't appear on NetworkTables as it should**
+```
+MjpegServer server = CameraServer.addServer("First Camera");
+UsbCamera cam = new UsbCamera("First Camera", 0); // the string is an arbitary name, 0 is the device number
+cam.setVideoMode(VideoMode.PixelFormat.kMJPEG, 640, 480, 30); // camera is 640x480 at 30fps
+server.setSource(cam);
+
+// now set the defaults for streams to 320x240 at 15fps and level 20 compression
+server.setCompression(20);
+server.setFPS(15);
+server.setResolution(320, 240);
+```
+
+**Important note:** In the code above it is essential that the call to `CameraServer.addServer` precede the `new UsbCamera` operation. 
+This is due to a CameraServer/cscore initialization order constraint (see wpilib issues 5055 and 6130)**
+For the same reason, the simpler and more obvious **code below does not currently work**.
+
 ```
 UsbCamera cam = new UsbCamera("First Camera", 0); // the string is an arbitary name, 0 is the device number
 cam.setVideoMode(VideoMode.PixelFormat.kMJPEG, 640, 480, 30); // camera is 640x480 at 30fps
