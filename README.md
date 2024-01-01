@@ -45,7 +45,7 @@ On the RPi you change the `VideoMode` using the `Vision Settings` tab on the WPI
 On the roboRIO you control the camera-native settings in your robot code.  Basic code for this in Java is:
 ```
 UsbCamera cam = CameraServer.startAutomaticCapture();
-cam.setVideoMode(VideoMode.PixelFormat.MJPEG, 360, 240, 15); // configure camera for MJPEG at 360x240 resolution and 15fps.
+cam.setVideoMode(VideoMode.PixelFormat.kMJPEG, 360, 240, 15); // configure camera for MJPEG at 360x240 resolution and 15fps.
 ```
  C++ code is similar (see the WPILib documentation Vision documentation [here](wpilibdoc).
   
@@ -90,7 +90,7 @@ Remember that the stream default settings are the frame rate and mode from the c
 Here's how to do it in code for the first camera. (There's no explicit WPILib documentation for this technique which takes advantage of starting the server based on an already-created Camera object. This is the only way I could figure out that gave access to both the Camera object and MjpegServer object -- and you need to have both in order to fully configure the system.) 
 ```
 UsbCamera cam = new UsbCamera("First Camera", 0); // the string is an arbitary name, 0 is the device number
-cam.setVideoMode(VideoMode.PixelFormat.MJPEG, 640, 480, 30); // camera is 640x480 at 30fps
+cam.setVideoMode(VideoMode.PixelFormat.kMJPEG, 640, 480, 30); // camera is 640x480 at 30fps
 MjpegServer server = CameraServer.startAutomaticCapture(cam);
 // now set the defaults for streams to 320x240 at 15fps and level 20 compression
 server.setCompression(20);
